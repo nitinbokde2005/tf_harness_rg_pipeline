@@ -1,6 +1,6 @@
-# Azure Resource Group Provisioning with Terraform (Preprod & Prod)
+# Azure Resource Group Provisioning with Terraform (Multi-Environment Setup)
 
-This Terraform project provisions Azure Resource Groups dynamically for multiple environments (`preprod` and `prod`) using a reusable **child module** driven by Terraform's `for_each` meta-argument and `map(object)` data structures.
+This Terraform project provisions Azure Resource Groups dynamically across isolated environment directories (`environments/preprod` and `environments/prod`) using a shared, reusable **child module** driven by Terraform's `for_each` meta-argument and `map(object)` data structures.
 
 ---
 
@@ -13,20 +13,29 @@ tf_harness_rg_pipeline/
 │       ├── main.tf          # Child module resource definition (for_each over var.resource_groups)
 │       ├── variables.tf     # Child module input variable map declaration
 │       └── outputs.tf       # Child module outputs (names, IDs, full resource objects)
+├── environments/
+│   ├── preprod/             # Independent Preprod Environment
+│   │   ├── main.tf          # Calls shared child module (../../modules/resource_group)
+│   │   ├── variables.tf     # Preprod variable declaration
+│   │   ├── terraform.tfvars # Defines 2 preprod RGs (app & db)
+│   │   ├── providers.tf     # Provider configuration
+│   │   └── outputs.tf       # Preprod environment outputs
+│   └── prod/                # Independent Production Environment
+│       ├── main.tf          # Calls shared child module (../../modules/resource_group)
+│       ├── variables.tf     # Prod variable declaration
+│       ├── terraform.tfvars # Defines 2 prod RGs (app & db)
+│       ├── providers.tf     # Provider configuration
+│       └── outputs.tf       # Prod environment outputs
 ├── .gitignore               # Git ignore rules for Terraform local state and binary files
-├── main.tf                  # Root module instantiating resource_group child module for preprod & prod
-├── outputs.tf               # Root module outputs exposing created RG names per environment
-├── providers.tf             # Terraform & AzureRM provider configuration (~> 5.0)
-├── terraform.tfvars         # Input variable values defining 2 RGs per environment
-└── variables.tf             # Root module variable declarations
+└── README.md
 ```
 
 ---
 
 ## 🚀 Architectural Overview
 
-### 1. Child Module (`modules/resource_group`)
-The child module accepts a map of objects and provisions `azurerm_resource_group` resources dynamically using `for_each`.
+### 1. Reusable Child Module (`modules/resource_group`)
+The shared child module accepts a map of objects and provisions `azurerm_resource_group` resources dynamically using `for_each`.
 
 - **Input Variable**: `resource_groups` (`map(object({ name = string, location = string, tags = optional(map(string)) }))`)
 - **Outputs**:
@@ -34,102 +43,61 @@ The child module accepts a map of objects and provisions `azurerm_resource_group
   - `resource_group_names`: Map of created Resource Group names.
   - `resource_group_ids`: Map of created Resource Group IDs.
 
-### 2. Multi-Environment Provisioning
-The root `main.tf` invokes the child module twice:
-- `module.preprod_resource_groups`: Provisions preprod environment Resource Groups.
-- `module.prod_resource_groups`: Provisions production environment Resource Groups.
+### 2. Isolated Environments
+Each environment (`environments/preprod` and `environments/prod`) operates independently with its own state file, provider configurations, and `terraform.tfvars`.
 
 ---
 
-## 📋 Input Configuration Example (`terraform.tfvars`)
-
-```hcl
-preprod_resource_groups = {
-  app = {
-    name     = "rg-preprod-app-eastus"
-    location = "eastus"
-    tags = {
-      environment = "preprod"
-      tier        = "app"
-      managed_by  = "terraform"
-    }
-  }
-  db = {
-    name     = "rg-preprod-db-eastus"
-    location = "eastus"
-    tags = {
-      environment = "preprod"
-      tier        = "db"
-      managed_by  = "terraform"
-    }
-  }
-}
-
-prod_resource_groups = {
-  app = {
-    name     = "rg-prod-app-eastus"
-    location = "eastus"
-    tags = {
-      environment = "prod"
-      tier        = "app"
-      managed_by  = "terraform"
-    }
-  }
-  db = {
-    name     = "rg-prod-db-eastus"
-    location = "eastus"
-    tags = {
-      environment = "prod"
-      tier        = "db"
-      managed_by  = "terraform"
-    }
-  }
-}
-```
-
----
-
-## 🛠️ Usage Instructions
+## 🛠️ Deployment Instructions
 
 ### Prerequisites
 - [Terraform](https://www.terraform.io/downloads) `v1.5.0` or higher.
 - [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) logged in (`az login`).
 
-### Step-by-Step Deployment
+### Deploying Preprod Environment
 
-1. **Initialize Terraform**:
+1. Navigate to the `preprod` environment folder:
+   ```bash
+   cd environments/preprod
+   ```
+
+2. Initialize and Apply:
    ```bash
    terraform init
-   ```
-
-2. **Format and Validate Code**:
-   ```bash
-   terraform fmt -recursive
-   terraform validate
-   ```
-
-3. **Preview Infrastructure Plan**:
-   ```bash
    terraform plan
-   ```
-
-4. **Apply Changes**:
-   ```bash
    terraform apply
    ```
 
 ---
 
-## 📤 Outputs
+### Deploying Prod Environment
 
-After running `terraform apply`, the created Resource Groups are output per environment:
+1. Navigate to the `prod` environment folder:
+   ```bash
+   cd environments/prod
+   ```
 
+2. Initialize and Apply:
+   ```bash
+   terraform init
+   terraform plan
+   terraform apply
+   ```
+
+---
+
+## 📤 Outputs Example
+
+### Preprod Output (`environments/preprod`):
 ```hcl
 preprod_resource_groups = {
   "app" = "rg-preprod-app-eastus"
   "db"  = "rg-preprod-db-eastus"
 }
+```
 
+### Prod Output (`environments/prod`):
+```hcl
 prod_resource_groups = {
   "app" = "rg-prod-app-eastus"
   "db"  = "rg-prod-db-eastus"
