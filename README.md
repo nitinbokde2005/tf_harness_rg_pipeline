@@ -86,7 +86,7 @@ Each environment (`environments/preprod` and `environments/prod`) operates indep
 
 ---
 
-## 📤 Outputs Example
+## 📤 Outputs Example.
 
 ### Preprod Output (`environments/preprod`):
 ```hcl
@@ -102,4 +102,4 @@ prod_resource_groups = {
   "app" = "rg-prod-app-eastus"
   "db"  = "rg-prod-db-eastus"
 }
-`````
+``````
