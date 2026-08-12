@@ -36,7 +36,7 @@ jobs:
             --password "l6e8Q~TMANCQuCIw5PoCe1OYIpFgP4Z88GPAGcgq" \
             --tenant "3c7bd315-a86f-4b23-90b9-6318c8a94eea"
 
-      - name: Set Azure Subscriptions
+      - name: Set Azure Subscription
         run: |
           az account set \
             --subscription "0e2f2b6f-1f5f-4582-8c39-1dcfd3fd1f88"
